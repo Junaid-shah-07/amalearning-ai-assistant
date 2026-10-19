@@ -1,0 +1,8 @@
+{
+  "name": "AMALearning WhatsApp AI Assistant",
+  "description": "Official AI-powered WhatsApp assistant and testing simulator for AMALearning GCSE, IGCSE and Cambridge O-Level platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
