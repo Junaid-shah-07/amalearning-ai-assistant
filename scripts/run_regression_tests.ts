@@ -144,9 +144,11 @@ function generateLocalResponse(
     if (!basicPlan) {
       return PLANS_UNAVAILABLE_MESSAGE;
     }
-    const lots = getFeatureLimit(basicPlan, 'lots') ?? 4;
-    const mocks = getFeatureLimit(basicPlan, 'mock') ?? 2;
-    return `Jee bilkul, AMAL GCSE, IGCSE aur Cambridge O-Level ke liye Combined aur Triple Science (Biology, Chemistry, Physics) aur Maths/TSP ki tayari karwata hai. Hamara ${basicPlan.name} £${basicPlan.monthlyPrice} per month hai, jisme full app access, ${lots} LOTS live tuition sessions aur ${mocks} Mock Exams shamil hain. Agar mazeed maloomat darkaar hon tou batayiye ga!`;
+    const limits = formatPlanLimits(basicPlan);
+    const featureDetails = limits === 'full app access with core learning resources'
+      ? 'full app access'
+      : `full app access aur ${limits}`;
+    return `Jee bilkul, AMAL GCSE, IGCSE aur Cambridge O-Level ke liye Combined aur Triple Science (Biology, Chemistry, Physics) aur Maths/TSP ki tayari karwata hai. Hamara ${basicPlan.name.trim()} £${basicPlan.monthlyPrice} per month hai, jisme ${featureDetails} shamil hain. Agar mazeed maloomat darkaar hon tou batayiye ga!`;
   }
 
   // 2. Jailbreak / Discount attempts
@@ -2348,6 +2350,80 @@ const testCases: TestCase[] = [
       const isAuthSameOrigin = isRequestAuthorized(sameOriginReq, 'prod-secret-key-12345', true);
       if (!isAuthSameOrigin) {
         return { passed: false, reason: 'Same-origin preview caller was rejected.' };
+      }
+
+      return { passed: true };
+    },
+  },
+  {
+    id: 'PLAN-07',
+    name: 'Zero feature invention: Fallback parent recommendation and Roman Urdu never invent LOTS, Mock Exam, or Topic Test limits when absent from API plan',
+    query: '',
+    validator: () => {
+      // Test plans that have NO LOTS, NO Mock Exams, and NO Topic Tests in features
+      const minimalPlans: ApiPlan[] = [
+        {
+          _id: 'test-app-only',
+          name: 'Custom App Only',
+          monthlyPrice: 12,
+          yearlyPrice: 120,
+          isActive: true,
+          category: 'student',
+          features: [],
+        },
+        {
+          _id: 'test-basic',
+          name: 'Custom Basic Package',
+          monthlyPrice: 55,
+          yearlyPrice: 550,
+          isActive: true,
+          category: 'student',
+          features: [], // No lots, no mocks, no topic tests
+        },
+        {
+          _id: 'test-standard',
+          name: 'Custom Standard Package',
+          monthlyPrice: 95,
+          yearlyPrice: 950,
+          isActive: true,
+          category: 'student',
+          features: [], // No lots, no mocks, no topic tests
+        },
+        {
+          _id: 'test-premium',
+          name: 'Custom Premium Package',
+          monthlyPrice: 145,
+          yearlyPrice: 1450,
+          isActive: true,
+          category: 'student',
+          features: [], // No lots, no mocks, no topic tests
+        },
+      ];
+
+      // 1. Check formatParentRecommendation: must not invent 4, 12, 15, 20 LOTS or Mock Exams
+      const parentRec = formatParentRecommendation(minimalPlans);
+      if (parentRec.includes('4 LOTS') || parentRec.includes('12 LOTS') || parentRec.includes('20 LOTS')) {
+        return { passed: false, reason: `formatParentRecommendation invented LOTS lessons when none exist in API. Got: ${parentRec}` };
+      }
+      if (parentRec.includes('2 Mock') || parentRec.includes('4 Mock') || parentRec.includes('15 Topic')) {
+        return { passed: false, reason: `formatParentRecommendation invented Mock Exams or Topic Tests when none exist in API. Got: ${parentRec}` };
+      }
+      if (!parentRec.includes('£55 per month') || !parentRec.includes('£95 per month') || !parentRec.includes('£145 per month')) {
+        return { passed: false, reason: `formatParentRecommendation failed to quote real plan prices (£55, £95, £145). Got: ${parentRec}` };
+      }
+
+      // 2. Check Roman Urdu fallback: must not invent 4 LOTS or 2 Mock Exams
+      const urduResp = generateLocalResponse(
+        'kya aap GCSE tayari karwatay hain aur fees kitni hai?',
+        [],
+        undefined,
+        { individual: minimalPlans, school: [] }
+      );
+      if (urduResp.includes('4 LOTS') || urduResp.includes('2 Mock Exams')) {
+        return { passed: false, reason: `Roman Urdu fallback invented 4 LOTS or 2 Mock Exams when none exist in API. Got: ${urduResp}` };
+      }
+      if (!urduResp.includes('£55 per month')) {
+        return { passed: false, reason: `Roman Urdu fallback failed to quote real plan price £55 per month. Got: ${urduResp}` };
       }
 
       return { passed: true };

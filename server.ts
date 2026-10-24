@@ -19,7 +19,6 @@ import {
   getPlanExamBoardName,
   PLANS_UNAVAILABLE_MESSAGE,
   SCHOOL_PLANS_EMPTY_MESSAGE,
-  getFeatureLimit,
   ApiPlan,
   findPlanByKeyword,
 } from './src/services/plansService.js';
@@ -120,9 +119,11 @@ async function startServer() {
       if (!basicPlan) {
         return PLANS_UNAVAILABLE_MESSAGE;
       }
-      const lots = getFeatureLimit(basicPlan, 'lots') ?? 4;
-      const mocks = getFeatureLimit(basicPlan, 'mock') ?? 2;
-      return `Jee bilkul, AMAL GCSE, IGCSE aur Cambridge O-Level ke liye Combined aur Triple Science (Biology, Chemistry, Physics) aur Maths/TSP ki tayari karwata hai. Hamara ${basicPlan.name} £${basicPlan.monthlyPrice} per month hai, jisme full app access, ${lots} LOTS live tuition sessions aur ${mocks} Mock Exams shamil hain. Agar mazeed maloomat darkaar hon tou batayiye ga!`;
+      const limits = formatPlanLimits(basicPlan);
+      const featureDetails = limits === 'full app access with core learning resources'
+        ? 'full app access'
+        : `full app access aur ${limits}`;
+      return `Jee bilkul, AMAL GCSE, IGCSE aur Cambridge O-Level ke liye Combined aur Triple Science (Biology, Chemistry, Physics) aur Maths/TSP ki tayari karwata hai. Hamara ${basicPlan.name.trim()} £${basicPlan.monthlyPrice} per month hai, jisme ${featureDetails} shamil hain. Agar mazeed maloomat darkaar hon tou batayiye ga!`;
     }
 
     // 2. Jailbreak / Discount attempts

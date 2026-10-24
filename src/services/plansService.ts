@@ -390,26 +390,31 @@ export function formatParentRecommendation(plans: ApiPlan[], boardFilter?: strin
   }
 
   const basicPrice = `£${basic.monthlyPrice} per month`;
-  const basicLots = getFeatureLimit(basic, 'lots') ?? 4;
-  const basicMocks = getFeatureLimit(basic, 'mock') ?? 2;
+  const basicLimits = formatPlanLimits(basic);
+  const basicDetails = basicLimits === 'full app access with core learning resources'
+    ? 'includes full AMAL app access, Maths/TSP, Combined and Triple Science.'
+    : `includes full AMAL app access, Maths/TSP, Combined and Triple Science, with ${basicLimits}.`;
 
   const standardPrice = `£${standard.monthlyPrice} per month`;
-  const standardLots = getFeatureLimit(standard, 'lots') ?? 12;
-  const standardTests = getFeatureLimit(standard, 'topic') ?? 15;
-  const standardMocks = getFeatureLimit(standard, 'mock') ?? 2;
+  const standardLimits = formatPlanLimits(standard);
+  const standardDetails = standardLimits === 'full app access with core learning resources'
+    ? 'includes the same core subjects.'
+    : `includes the same core subjects, with ${standardLimits}.`;
 
   const premiumPrice = `£${premium.monthlyPrice} per month`;
-  const premiumLots = getFeatureLimit(premium, 'lots') ?? 20;
-  const premiumMocks = getFeatureLimit(premium, 'mock') ?? 4;
+  const premiumLimits = formatPlanLimits(premium);
+  const premiumDetails = premiumLimits === 'full app access with core learning resources'
+    ? 'includes full AMAL app access, Maths/TSP, Combined and Triple Science.'
+    : `includes ${premiumLimits}.`;
 
   const appOnlyPrice = `£${appOnly.monthlyPrice} per month`;
 
   return `It depends on whether your child needs live teaching or independent revision.
 
 Our individual monthly plans with live tuition are:
-• Basic (${basicPrice}): includes full AMAL app access, Maths/TSP, Combined and Triple Science, ${basicLots} LOTS live tuition lessons and ${basicMocks} Mock Exams.
-• Standard (${standardPrice}): includes the same core subjects, with ${standardTests} Topic Tests, ${standardLots} LOTS live tuition lessons and ${standardMocks} Mock Exams.
-• Premium (${premiumPrice}): includes ${premiumLots} LOTS live tuition lessons, Topic Tests and ${premiumMocks} Mock Exams.
+• Basic (${basicPrice}): ${basicDetails}
+• Standard (${standardPrice}): ${standardDetails}
+• Premium (${premiumPrice}): ${premiumDetails}
 
 If they only need independent revision and practice, App-Only is ${appOnlyPrice}.
 
