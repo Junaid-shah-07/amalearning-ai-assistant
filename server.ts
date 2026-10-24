@@ -194,19 +194,49 @@ async function startServer() {
       return "I'm Zeeshan, AMAL's virtual AI assistant 🙂 I can help with general questions about our learning resources, lessons and subscriptions. If you'd rather speak to the team directly, that's fine too — you can reach them at support@amalearning.space.";
     }
 
-    // 5. School vs Individual routing (CRITICAL: Prioritise school plans when customer mentions a school)
-    const isSchoolQuery =
-      text.includes('school') ||
-      text.includes('schools') ||
+    // 5. School vs Individual routing
+    // Distinguish genuine school/institution enquiries from parents/students mentioning their child's school
+    const isParentOrStudentIndividualContext =
+      text.includes('my son') ||
+      text.includes('my daughter') ||
+      text.includes('my child') ||
+      text.includes('my kid') ||
+      text.includes('for my son') ||
+      text.includes('for my daughter') ||
+      text.includes('for my child') ||
+      text.includes('at school') ||
+      text.includes('in school') ||
+      text.includes('goes to school') ||
+      text.includes('child at school') ||
+      text.includes('after school');
+
+    const hasIndividualTierMention =
+      text.includes('basic') ||
+      text.includes('standard') ||
+      text.includes('premium') ||
+      text.includes('app-only') ||
+      text.includes('app only');
+
+    const isInstitutionalSchoolEnquiry =
       text.includes('secondary school') ||
       text.includes('licence') ||
       text.includes('license') ||
       text.includes('institution') ||
       text.includes('for our students') ||
       text.includes('head of department') ||
-      text.includes('i am a teacher') ||
-      text.includes("i'm a teacher") ||
-      (text.includes('teacher') && (text.includes('school') || text.includes('licence') || text.includes('pricing') || text.includes('students')));
+      text.includes('cohort') ||
+      text.includes('school pricing') ||
+      text.includes('school package') ||
+      text.includes('school plan') ||
+      text.includes('school subscription') ||
+      text.includes('we are a school') ||
+      text.includes('for our school') ||
+      text.includes('on behalf of a school') ||
+      text.includes('buying for a school') ||
+      (text.includes('teacher') && (text.includes('school') || text.includes('licence') || text.includes('pricing') || text.includes('students') || text.includes('cohort'))) ||
+      ((text.includes('school') || text.includes('schools')) && !isParentOrStudentIndividualContext && !hasIndividualTierMention);
+
+    const isSchoolQuery = isInstitutionalSchoolEnquiry;
 
     const isExplicitCompare = text.includes('compare') && (text.includes('individual') || text.includes('parent') || text.includes('personal'));
 

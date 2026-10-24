@@ -56,40 +56,44 @@ interface TestCase {
   validator: (response: string, audit: any) => Promise<{ passed: boolean; reason?: string }> | { passed: boolean; reason?: string };
 }
 
-// Baseline live plans data for deterministic tests
+// Baseline live plans data matching authoritative live API
 const baselineIndividualPlans: ApiPlan[] = [
   {
-    _id: 'app-only',
-    name: 'GCSE App-Only Package',
-    monthlyPrice: 8,
-    yearlyPrice: 80,
+    _id: 'aqa-app-only',
+    name: 'AQA app only ',
+    examBoard: { _id: '1', name: 'AQA' },
+    monthlyPrice: 10.99,
+    yearlyPrice: 100,
     isActive: true,
     category: 'student',
-    features: [{ name: 'lots', limit: 0 }, { name: 'mock_exams', limit: 0 }],
+    features: [{ name: 'topic_test', limit: 2 }, { name: 'lots', limit: 0 }],
   },
   {
     _id: 'basic',
-    name: 'Basic Package',
-    monthlyPrice: 60,
-    yearlyPrice: 600,
+    name: 'Basic plan ',
+    examBoard: { _id: '1', name: 'AQA' },
+    monthlyPrice: 70,
+    yearlyPrice: 700,
     isActive: true,
     category: 'student',
-    features: [{ name: 'lots', limit: 4 }, { name: 'mock_exams', limit: 2 }],
+    features: [{ name: 'lots', limit: 4 }, { name: 'mock_exams', limit: 2 }, { name: 'topic_test', limit: 10 }],
   },
   {
     _id: 'standard',
-    name: 'Standard Package',
-    monthlyPrice: 120,
-    yearlyPrice: 1200,
+    name: 'Standard plan',
+    examBoard: { _id: '1', name: 'AQA' },
+    monthlyPrice: 130,
+    yearlyPrice: 1300,
     isActive: true,
     category: 'student',
     features: [{ name: 'lots', limit: 12 }, { name: 'topic_test', limit: 15 }, { name: 'mock_exams', limit: 2 }],
   },
   {
     _id: 'premium',
-    name: 'Premium Package',
-    monthlyPrice: 180,
-    yearlyPrice: 1800,
+    name: 'AQA-Premium Package',
+    examBoard: { _id: '1', name: 'AQA' },
+    monthlyPrice: 190,
+    yearlyPrice: 1900,
     isActive: true,
     category: 'student',
     features: [{ name: 'lots', limit: 20 }, { name: 'mock_exams', limit: 4 }, { name: 'topic_test', limit: 20 }],
@@ -215,18 +219,48 @@ function generateLocalResponse(
   }
 
   // 5. School vs Individual routing
-  const isSchoolQuery =
-    text.includes('school') ||
-    text.includes('schools') ||
+  // Distinguish genuine school/institution enquiries from parents/students mentioning their child's school
+  const isParentOrStudentIndividualContext =
+    text.includes('my son') ||
+    text.includes('my daughter') ||
+    text.includes('my child') ||
+    text.includes('my kid') ||
+    text.includes('for my son') ||
+    text.includes('for my daughter') ||
+    text.includes('for my child') ||
+    text.includes('at school') ||
+    text.includes('in school') ||
+    text.includes('goes to school') ||
+    text.includes('child at school') ||
+    text.includes('after school');
+
+  const hasIndividualTierMention =
+    text.includes('basic') ||
+    text.includes('standard') ||
+    text.includes('premium') ||
+    text.includes('app-only') ||
+    text.includes('app only');
+
+  const isInstitutionalSchoolEnquiry =
     text.includes('secondary school') ||
     text.includes('licence') ||
     text.includes('license') ||
     text.includes('institution') ||
     text.includes('for our students') ||
     text.includes('head of department') ||
-    text.includes('i am a teacher') ||
-    text.includes("i'm a teacher") ||
-    (text.includes('teacher') && (text.includes('school') || text.includes('licence') || text.includes('pricing') || text.includes('students')));
+    text.includes('cohort') ||
+    text.includes('school pricing') ||
+    text.includes('school package') ||
+    text.includes('school plan') ||
+    text.includes('school subscription') ||
+    text.includes('we are a school') ||
+    text.includes('for our school') ||
+    text.includes('on behalf of a school') ||
+    text.includes('buying for a school') ||
+    (text.includes('teacher') && (text.includes('school') || text.includes('licence') || text.includes('pricing') || text.includes('students') || text.includes('cohort'))) ||
+    ((text.includes('school') || text.includes('schools')) && !isParentOrStudentIndividualContext && !hasIndividualTierMention);
+
+  const isSchoolQuery = isInstitutionalSchoolEnquiry;
 
   const isExplicitCompare = text.includes('compare') && (text.includes('individual') || text.includes('parent') || text.includes('personal'));
 
@@ -493,15 +527,15 @@ const testCases: TestCase[] = [
   },
   {
     id: 'REG-04',
-    name: 'Parent plan recommendation refinement: Quotes live prices (£60 Basic, £120 Standard), no invented frequency, quotes 4 & 12 LOTS',
+    name: 'Parent plan recommendation refinement: Quotes live prices (£70 Basic, £130 Standard), no invented frequency, quotes 4 & 12 LOTS',
     query: 'Which plan do you recommend for my child?',
     history: [],
     validator: (response, audit) => {
       const mentions3Lessons = response.toLowerCase().includes('3 live lessons a week') || response.toLowerCase().includes('3 lessons a week');
       const mentionsBasic4Lots = response.includes('4 LOTS');
       const mentionsStandard12Lots = response.includes('12 LOTS');
-      const quotesLiveBasicPrice = response.includes('£60');
-      const quotesLiveStandardPrice = response.includes('£120');
+      const quotesLiveBasicPrice = response.includes('£70');
+      const quotesLiveStandardPrice = response.includes('£130');
       const hasClosingQuestion = response.toLowerCase().includes('live tuition') && response.toLowerCase().includes('independent revision');
       if (mentions3Lessons) {
         return { passed: false, reason: 'Violated rule: claimed Standard has "3 live lessons a week".' };
@@ -513,10 +547,10 @@ const testCases: TestCase[] = [
         return { passed: false, reason: 'Standard plan does not specify 12 LOTS live tuition lessons.' };
       }
       if (!quotesLiveBasicPrice) {
-        return { passed: false, reason: 'Did not quote live price £60 for Basic plan.' };
+        return { passed: false, reason: 'Did not quote live price £70 for Basic plan.' };
       }
       if (!quotesLiveStandardPrice) {
-        return { passed: false, reason: 'Did not quote live price £120 for Standard plan.' };
+        return { passed: false, reason: 'Did not quote live price £130 for Standard plan.' };
       }
       if (!hasClosingQuestion) {
         return { passed: false, reason: 'Missing closing question regarding live tuition vs independent revision.' };
@@ -611,17 +645,17 @@ const testCases: TestCase[] = [
   },
   {
     id: 'REG-09',
-    name: 'Multi-turn context: Follow-up pricing quotes live price £180 for Premium without re-greeting',
+    name: 'Multi-turn context: Follow-up pricing quotes live price £190 for Premium without re-greeting',
     query: 'What about Premium?',
     history: [
       { role: 'user', content: 'How much is your Basic plan?' },
-      { role: 'assistant', content: 'Basic is £60 per month. It includes full AMAL app access, Maths/TSP, Combined and Triple Science, 4 live tuition lessons and 2 Mock Exams.' },
+      { role: 'assistant', content: 'Basic is £70 per month. It includes full AMAL app access, Maths/TSP, Combined and Triple Science, 4 live tuition lessons and 2 Mock Exams.' },
     ],
     validator: (response, audit) => {
-      const quotesPremium = response.includes('£180');
+      const quotesPremium = response.includes('£190');
       const repeatsFullGreeting = response.includes('Hi! 👋 I’m Zeeshan from AMAL') || response.includes('Thanks for reaching out! 😊');
       if (!quotesPremium) {
-        return { passed: false, reason: `Did not quote live price £180 for Premium plan. Got: ${response}` };
+        return { passed: false, reason: `Did not quote live price £190 for Premium plan. Got: ${response}` };
       }
       if (repeatsFullGreeting) {
         return { passed: false, reason: 'Repetitively sent full greeting on a follow-up conversation turn.' };
@@ -666,14 +700,14 @@ const testCases: TestCase[] = [
   },
   {
     id: 'REG-13',
-    name: 'Direct question without name: Answers live Basic plan price £60 directly without demanding customer name first',
+    name: 'Direct question without name: Answers live Basic plan price £70 directly without demanding customer name first',
     query: 'How much is the Basic plan?',
     history: [],
     validator: (response) => {
-      const quotesPrice = response.includes('£60');
+      const quotesPrice = response.includes('£70');
       const asksForName = response.toLowerCase().includes('what is your name') || response.toLowerCase().includes("what's your name");
       if (!quotesPrice) {
-        return { passed: false, reason: `Did not answer live Basic plan price (£60). Got: ${response}` };
+        return { passed: false, reason: `Did not answer live Basic plan price (£70). Got: ${response}` };
       }
       if (asksForName) {
         return { passed: false, reason: 'Demanded or asked for customer name before answering direct question.' };
@@ -716,6 +750,38 @@ const testCases: TestCase[] = [
       }
       if (!responseC.includes('Sara') || responseC.includes('Dilawar')) {
         return { passed: false, reason: 'Session C either missed Sara or cross-contaminated Dilawar.' };
+      }
+      return { passed: true };
+    },
+  },
+  {
+    id: 'REG-16',
+    name: 'Parent school keyword disambiguation: Asking "My son is at school, how much is the Basic plan?" returns individual Basic plan',
+    query: 'My son is at school, how much is the Basic plan?',
+    validator: (response: string) => {
+      const isSchoolMisrouted = response.toLowerCase().includes('not published online') || response.toLowerCase().includes('school licences');
+      const hasBasicPrice = response.includes('£70');
+      if (isSchoolMisrouted) {
+        return { passed: false, reason: 'Parent query with "at school" was mistakenly routed to school plans.' };
+      }
+      if (!hasBasicPrice) {
+        return { passed: false, reason: `Did not quote Basic plan live price £70. Got: ${response}` };
+      }
+      return { passed: true };
+    },
+  },
+  {
+    id: 'REG-17',
+    name: 'Parent school keyword disambiguation: Asking "My child goes to school, what plans do you offer?" provides individual overview',
+    query: 'My child goes to school and needs help, what plans do you offer?',
+    validator: (response: string) => {
+      const isSchoolMisrouted = response.toLowerCase().includes('school licences') || response.toLowerCase().includes('not published online');
+      const hasIndividualPlans = response.includes('£70') || response.includes('Basic') || response.includes('Standard');
+      if (isSchoolMisrouted) {
+        return { passed: false, reason: 'Parent query mentioning school was misrouted to school plans.' };
+      }
+      if (!hasIndividualPlans) {
+        return { passed: false, reason: `Did not offer individual plan options to parent. Got: ${response}` };
       }
       return { passed: true };
     },
@@ -805,13 +871,13 @@ const testCases: TestCase[] = [
     validator: async () => {
       // Individual enquiry
       const indResponse = generateLocalResponse('How much is the Standard plan?');
-      if (!indResponse.includes('£120')) {
-        return { passed: false, reason: `Individual enquiry did not quote live price £120. Got: ${indResponse}` };
+      if (!indResponse.includes('£130')) {
+        return { passed: false, reason: `Individual enquiry did not quote live price £130. Got: ${indResponse}` };
       }
 
       // School enquiry
       const schoolResponse = generateLocalResponse('We are a school looking for student licences.');
-      if (schoolResponse.includes('£120') || schoolResponse.includes('£60') || schoolResponse.includes('£180')) {
+      if (schoolResponse.includes('£130') || schoolResponse.includes('£70') || schoolResponse.includes('£190') || schoolResponse.includes('£10.99')) {
         return { passed: false, reason: 'School enquiry leaked individual pricing.' };
       }
       if (!schoolResponse.includes('support@amalearning.space')) {
@@ -822,24 +888,24 @@ const testCases: TestCase[] = [
   },
   {
     id: 'API-04',
-    name: 'Updated live prices: Quoting live prices (£8, £60, £120, £180) and rejecting outdated prices (£10.99, £70, £130, £190)',
+    name: 'Authoritative live prices: Quoting live prices (£10.99, £70, £130, £190) and rejecting outdated fixtures (£8, £60, £120, £180)',
     query: 'What are your prices for individuals?',
     validator: (response) => {
-      const quotesAppOnly = response.includes('£8');
-      const quotesBasic = response.includes('£60');
-      const quotesStandard = response.includes('£120');
-      const quotesPremium = response.includes('£180');
+      const quotesAppOnly = response.includes('£10.99');
+      const quotesBasic = response.includes('£70');
+      const quotesStandard = response.includes('£130');
+      const quotesPremium = response.includes('£190');
 
-      const leaksOldApp = response.includes('£10.99');
-      const leaksOldBasic = response.includes('£70');
-      const leaksOldStandard = response.includes('£130');
-      const leaksOldPremium = response.includes('£190');
+      const leaksOldApp = response.includes('£8/mo') || response.includes('£8 per month');
+      const leaksOldBasic = response.includes('£60/mo') || response.includes('£60 per month');
+      const leaksOldStandard = response.includes('£120/mo') || response.includes('£120 per month');
+      const leaksOldPremium = response.includes('£180/mo') || response.includes('£180 per month');
 
       if (!quotesAppOnly || !quotesBasic || !quotesStandard || !quotesPremium) {
-        return { passed: false, reason: `Response missing live prices (£8, £60, £120, £180). Got: ${response}` };
+        return { passed: false, reason: `Response missing live prices (£10.99, £70, £130, £190). Got: ${response}` };
       }
       if (leaksOldApp || leaksOldBasic || leaksOldStandard || leaksOldPremium) {
-        return { passed: false, reason: 'Response leaked obsolete hardcoded prices (£10.99, £70, £130, £190).' };
+        return { passed: false, reason: 'Response leaked obsolete fixtures (£8, £60, £120, £180).' };
       }
       return { passed: true };
     },
@@ -1498,7 +1564,7 @@ const testCases: TestCase[] = [
       if (!responsePayload) {
         return { passed: false, reason: 'Response payload was null.' };
       }
-      if (!responsePayload.reply.includes('£60') || !responsePayload.reply.includes('Basic')) {
+      if (!responsePayload.reply.includes('£70') || !responsePayload.reply.includes('Basic')) {
         return { passed: false, reason: `Fallback response did not include verified live Basic plan pricing: ${responsePayload.reply}` };
       }
       if (responsePayload.note !== 'Generated using verified AMAL knowledge base.') {
@@ -2031,9 +2097,9 @@ const testCases: TestCase[] = [
       individual: [
         {
           _id: 'basic-pkg',
-          name: 'Basic Package',
-          monthlyPrice: 60,
-          yearlyPrice: 600,
+          name: 'Basic plan',
+          monthlyPrice: 70,
+          yearlyPrice: 700,
           isActive: true,
           category: 'student',
           features: [
@@ -2043,9 +2109,9 @@ const testCases: TestCase[] = [
         },
         {
           _id: 'std-pkg',
-          name: 'Standard Package',
-          monthlyPrice: 120,
-          yearlyPrice: 1200,
+          name: 'Standard plan',
+          monthlyPrice: 130,
+          yearlyPrice: 1300,
           isActive: true,
           category: 'student',
           features: [
@@ -2059,9 +2125,9 @@ const testCases: TestCase[] = [
     },
     validator: (response: string) => {
       // Must contain both Basic and Standard
-      const hasBasic = response.includes('Basic') && (response.includes('£60') || response.includes('60'));
-      const hasStandard = response.includes('Standard') && (response.includes('£120') || response.includes('120'));
-      const hasYearly = response.includes('£600') || response.includes('600') || response.includes('year') || response.includes('/yr');
+      const hasBasic = response.includes('Basic') && (response.includes('£70') || response.includes('70'));
+      const hasStandard = response.includes('Standard') && (response.includes('£130') || response.includes('130'));
+      const hasYearly = response.includes('£700') || response.includes('700') || response.includes('year') || response.includes('/yr');
 
       if (!hasBasic || !hasStandard) {
         return {

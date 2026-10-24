@@ -247,40 +247,27 @@ Answers must always be generated using the actual API data. Never invent missing
 
 #### Current Live API Baseline Plans:
 
-#### GCSE App-Only Package — £8 per month (£80/year)
-Includes:
+#### App-Only Package — £10.99 per month (£100/year)
+Available for AQA ("AQA app only") and Edexcel ("Edexcel app only"):
 - Full AMAL app access for GCSE, IGCSE and Cambridge O-Level
 - Maths/TSP and Combined and Triple Science
-- No included Topic Tests
+- 2 Topic Tests
 - No included LOTS live tuition lessons
 - No included Mock Exams
 
-#### Basic Package — £60 per month (£600/year)
-Includes:
-- Full AMAL app access
-- Maths/TSP and Combined and Triple Science
-- 4 LOTS live tuition lessons
-- 2 Mock Exams
+#### Basic Package — £70 per month (£700/year)
+- **AQA ("Basic plan"):** Full AMAL app access, Maths/TSP, Combined and Triple Science, 4 LOTS live tuition lessons, 2 Mock Exams, 10 Topic Tests.
+- **Edexcel ("Edexcel basic package"):** Full AMAL app access, Maths/TSP, Combined and Triple Science, 2 Topic Tests, 0 LOTS live tuition lessons, 0 Mock Exams.
 
-#### Standard Package — £120 per month (£1200/year)
-Includes:
-- Full AMAL app access
-- Maths/TSP and Combined and Triple Science
-- 15 Topic Tests
-- 12 LOTS live tuition lessons
-- 2 Mock Exams
+#### Standard Package — £130 per month (£1300/year)
+- **AQA ("Standard plan"):** Full AMAL app access, Maths/TSP, Combined and Triple Science, 12 LOTS live tuition lessons, 2 Mock Exams, 15 Topic Tests.
+- **Edexcel ("Edexcel standard package"):** Full AMAL app access, Maths/TSP, Combined and Triple Science, 12 LOTS live tuition lessons, 2 Mock Exams, 10 Topic Tests.
 
-#### Premium Package — £180 per month (£1800/year)
-Includes:
-- Full AMAL app access
-- Maths/TSP and Combined and Triple Science
-- Topic Tests
-- 20–24 LOTS live tuition lessons
-- 4 Mock Exams
+#### Premium Package — £190 per month (£1900/year)
+- **AQA ("AQA-Premium Package"):** Full AMAL app access, Maths/TSP, Combined and Triple Science, 20 LOTS live tuition lessons, 4 Mock Exams, 20 Topic Tests.
+- **Edexcel ("Edexcel Premium package"):** Full AMAL app access, Maths/TSP, Combined and Triple Science, 20 LOTS live tuition lessons, 4 Mock Exams, 20 Topic Tests.
 
-#### Mock Exam Packages
-- GCSE Mock Exam Package 1: £24 per month (£240/year) — 2 Mock Exams
-- GCSE Mock Exam Package 2: £32 per month (£320/year) — 4 Mock Exams
+*Note: Mock Exams are included within subscription plans according to their feature limits. No standalone monthly mock exam packages are currently sold online.*
 
 #### 7-Day Free Trial Offer
 
@@ -310,7 +297,7 @@ Focus on:
 - Number of Mock Exams.
 - The customer's stated learning requirements.
 
-If the customer mainly wants app access, mention GCSE App-Only Package at £8 per month. Do not imply it includes the live tuition allowances of Basic, Standard or Premium.
+If the customer mainly wants app access, mention App-Only Package at £10.99 per month. Do not imply it includes the live tuition allowances of Basic, Standard or Premium.
 
 If someone asks which plan is best, consider their requirements before recommending one. Do not automatically recommend Premium simply because it is the most expensive.
 
@@ -1155,26 +1142,42 @@ export interface PlanDetail {
 
 export const INDIVIDUAL_PLANS: PlanDetail[] = [
   {
-    id: 'app-only',
-    name: 'GCSE App-Only Package',
-    price: '£8',
-    cadence: 'per month',
+    id: 'aqa-app-only',
+    name: 'AQA app only',
+    price: '£10.99',
+    cadence: 'per month (£100/yr)',
     type: 'individual',
     features: [
-      'Full AMAL app access for GCSE/IGCSE',
+      'Full AMAL app access for AQA GCSE',
       'Maths / TSP classes',
       'Combined and Triple Science',
-      'No included Topic Tests',
+      '2 Topic Tests',
       'No included LOTS live tuition lessons',
       'No included Mock Exams',
     ],
-    notes: 'Best for self-guided independent practice and revision app access.',
+    notes: 'AQA specification: independent revision and practice.',
   },
   {
-    id: 'basic',
-    name: 'Basic Package',
-    price: '£60',
-    cadence: 'per month',
+    id: 'edexcel-app-only',
+    name: 'Edexcel app only',
+    price: '£10.99',
+    cadence: 'per month (£100/yr)',
+    type: 'individual',
+    features: [
+      'Full AMAL app access for Edexcel GCSE',
+      'Maths / TSP classes',
+      'Combined and Triple Science',
+      '2 Topic Tests',
+      'No included LOTS live tuition lessons',
+      'No included Mock Exams',
+    ],
+    notes: 'Edexcel specification: independent revision and practice.',
+  },
+  {
+    id: 'aqa-basic',
+    name: 'Basic plan (AQA)',
+    price: '£70',
+    cadence: 'per month (£700/yr)',
     type: 'individual',
     features: [
       'Full AMAL app access',
@@ -1182,65 +1185,90 @@ export const INDIVIDUAL_PLANS: PlanDetail[] = [
       'Combined and Triple Science',
       '4 LOTS live tuition lessons',
       '2 Mock Exams',
+      '10 Topic Tests',
     ],
-    notes: 'Solid revision foundation with live teaching checkpoints.',
+    notes: 'AQA specification with live tuition checkpoints and mock exams.',
   },
   {
-    id: 'standard',
-    name: 'Standard Package',
-    price: '£120',
-    cadence: 'per month',
+    id: 'edexcel-basic',
+    name: 'Edexcel basic package',
+    price: '£70',
+    cadence: 'per month (£700/yr)',
     type: 'individual',
     features: [
       'Full AMAL app access',
       'Maths / TSP classes',
       'Combined and Triple Science',
-      '15 Topic Tests',
+      '2 Topic Tests',
+      '0 LOTS live tuition lessons',
+    ],
+    notes: 'Edexcel specification with structured topic tests.',
+  },
+  {
+    id: 'aqa-standard',
+    name: 'Standard plan (AQA)',
+    price: '£130',
+    cadence: 'per month (£1300/yr)',
+    type: 'individual',
+    features: [
+      'Full AMAL app access',
+      'Maths / TSP classes',
+      'Combined and Triple Science',
       '12 LOTS live tuition lessons',
       '2 Mock Exams',
+      '15 Topic Tests',
     ],
     highlight: true,
-    notes: 'Most popular balanced tuition and topic testing support.',
+    notes: 'AQA specification: popular balanced tuition and topic testing support.',
   },
   {
-    id: 'premium',
-    name: 'Premium Package',
-    price: '£180',
-    cadence: 'per month',
+    id: 'edexcel-standard',
+    name: 'Edexcel standard package',
+    price: '£130',
+    cadence: 'per month (£1300/yr)',
     type: 'individual',
     features: [
       'Full AMAL app access',
       'Maths / TSP classes',
       'Combined and Triple Science',
-      'Topic Tests based on past papers',
-      '20–24 LOTS live tuition lessons',
+      '12 LOTS live tuition lessons',
+      '2 Mock Exams',
+      '10 Topic Tests',
+    ],
+    highlight: true,
+    notes: 'Edexcel specification: balanced live tuition and practice.',
+  },
+  {
+    id: 'aqa-premium',
+    name: 'AQA-Premium Package',
+    price: '£190',
+    cadence: 'per month (£1900/yr)',
+    type: 'individual',
+    features: [
+      'Full AMAL app access',
+      'Maths / TSP classes',
+      'Combined and Triple Science',
+      '20 LOTS live tuition lessons',
       '4 Mock Exams',
+      '20 Topic Tests',
     ],
-    notes: 'Comprehensive intensive programme with maximal live lessons.',
+    notes: 'Comprehensive intensive programme with maximal live lessons (AQA).',
   },
   {
-    id: 'mock-1',
-    name: 'GCSE Mock Exam Package 1',
-    price: '£24',
-    cadence: 'per month',
+    id: 'edexcel-premium',
+    name: 'Edexcel Premium package',
+    price: '£190',
+    cadence: 'per month (£1900/yr)',
     type: 'individual',
     features: [
-      '2 Mock Exams per month',
-      'Real exam-style practice',
+      'Full AMAL app access',
+      'Maths / TSP classes',
+      'Combined and Triple Science',
+      '20 LOTS live tuition lessons',
+      '4 Mock Exams',
+      '20 Topic Tests',
     ],
-    notes: 'Targeted exam practice checkpoints.',
-  },
-  {
-    id: 'mock-2',
-    name: 'GCSE Mock Exam Package 2',
-    price: '£32',
-    cadence: 'per month',
-    type: 'individual',
-    features: [
-      '4 Mock Exams per month',
-      'Real exam-style practice',
-    ],
-    notes: 'Intensive mock exam checkpoints.',
+    notes: 'Comprehensive intensive programme with maximal live lessons (Edexcel).',
   },
 ];
 
