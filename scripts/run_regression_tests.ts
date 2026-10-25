@@ -2511,6 +2511,40 @@ const testCases: TestCase[] = [
       return { passed: true };
     },
   },
+  {
+    id: 'VERCEL-05',
+    name: 'Vercel serverless isolation: server.ts does not statically import vite and lockfile is clean npm',
+    query: '',
+    validator: () => {
+      const serverCode = fs.readFileSync(path.resolve(process.cwd(), 'server.ts'), 'utf-8');
+      const hasTopLevelViteImport = /^import\s+.*from\s+['"]vite['"]/m.test(serverCode);
+      if (hasTopLevelViteImport) {
+        return {
+          passed: false,
+          reason: 'server.ts has a static top-level import of vite. This causes Vercel serverless functions to package and load rolldown native bindings at runtime.',
+        };
+      }
+
+      const pkgRaw = fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf-8');
+      const pkg = JSON.parse(pkgRaw);
+      if (pkg.dependencies && pkg.dependencies.vite) {
+        return {
+          passed: false,
+          reason: 'vite must be in devDependencies to prevent Vercel serverless function runtime bundling.',
+        };
+      }
+
+      const bunLockPath = path.resolve(process.cwd(), 'bun.lock');
+      if (fs.existsSync(bunLockPath)) {
+        return {
+          passed: false,
+          reason: 'bun.lock must not exist alongside package-lock.json to avoid Vercel package-manager conflicts.',
+        };
+      }
+
+      return { passed: true };
+    },
+  },
 ];
 
 async function runTestSuite() {
