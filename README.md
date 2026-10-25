@@ -162,7 +162,58 @@ Health check and assistant configuration status.
 
 ---
 
-## Deployment Guide (Google Cloud Run)
+## Deployment Guides
+
+### 1. Vercel Deployment (Serverless Frontend + API)
+
+This project is configured out-of-the-box for **Vercel** with a Vite SPA frontend and Express serverless API routes (`/api/chat`, `/api/plans`, `/api/info`).
+
+#### Vercel Project Settings
+| Setting | Recommended Value | Notes |
+|---|---|---|
+| **Framework Preset** | `Vite` | Auto-detected from `package.json` |
+| **Root Directory** | `./` | Leave default repository root |
+| **Build Command** | `npm run build` | Runs `vite build` to compile the frontend |
+| **Output Directory** | `dist` | Destination for static client assets |
+| **Install Command** | `npm install` | Installs dependencies |
+| **Node.js Version** | `20.x` or `22.x` | Supported Vercel Node runtime |
+
+#### Required Vercel Environment Variables
+Add these in **Vercel Dashboard > Project Settings > Environment Variables**:
+- `GEMINI_API_KEY`: Your Google Gemini API key (kept secure on serverless backend, never exposed to client).
+- `N8N_API_KEY`: Secret API key used to authenticate n8n HTTP requests.
+- `NODE_ENV`: `production` (automatically set by Vercel for production deployments).
+- `PLANS_CACHE_TTL_MS`: *(Optional)* Cache duration in milliseconds (default: `300000` = 5 min).
+- `GEMINI_MODEL`: *(Optional)* Model identifier (default: `gemini-3.5-flash-lite`).
+
+#### How Vercel Routing Works
+- `vercel.json` rewrites all `/api/(.*)` requests to the Serverless Function at `api/index.ts`.
+- `api/index.ts` exports the Express app without calling `app.listen()`.
+- Client assets in `dist/` are served with high-speed global caching via Vercel Edge CDN.
+- All client navigation routes fallback to `/index.html` via `((?!api/).*)` rewrite.
+
+#### Connecting n8n to Vercel
+In your n8n workflow:
+1. Add an **HTTP Request** node.
+2. **Method:** `POST`
+3. **URL:** `https://<YOUR-PROJECT>.vercel.app/api/chat`
+4. **Authentication:** Generic Credential Type -> Header Auth, or set Header directly:
+   - Header: `x-api-key`
+   - Value: `{{ $env.N8N_API_KEY }}` (or `Authorization: Bearer <N8N_API_KEY>`)
+5. **Send Body:** Enabled (JSON format)
+   ```json
+   {
+     "messages": [
+       { "role": "user", "content": "={{ $json.body.message }}" }
+     ],
+     "customerName": "={{ $json.body.senderName || '' }}"
+   }
+   ```
+6. **Response:** Access the assistant reply via `{{ $json.reply }}`.
+
+---
+
+### 2. Google Cloud Run (Container Deployment)
 
 The application is containerized using a multi-stage `Dockerfile` optimized for Google Cloud Run:
 

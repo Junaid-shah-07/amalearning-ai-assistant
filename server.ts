@@ -30,11 +30,9 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function startServer() {
-  const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-  const isProd = process.env.NODE_ENV === 'production';
-  const n8nApiKey = process.env.N8N_API_KEY || '';
+const app = express();
+const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+const n8nApiKey = process.env.N8N_API_KEY || '';
 
   app.use(express.json());
 
@@ -490,8 +488,10 @@ async function startServer() {
     return "I'm here to help with your GCSE, IGCSE and Cambridge O-Level queries. Would you like more details on our subjects, live lessons or revision resources?";
   }
 
+  const apiRouter = express.Router();
+
   // Health and info endpoint (rate-limited)
-  app.get('/api/info', infoRateLimiter, (_req, res) => {
+  apiRouter.get('/info', infoRateLimiter, (_req, res) => {
     res.json({
       status: 'online',
       name: 'AMALearning WhatsApp Assistant (Zeeshan)',
@@ -505,7 +505,7 @@ async function startServer() {
   });
 
   // Live Plans endpoint (Backend single source of truth for frontend & API clients, rate-limited)
-  app.get('/api/plans', plansRateLimiter, async (req, res) => {
+  apiRouter.get('/plans', plansRateLimiter, async (req, res) => {
     try {
       const category = req.query.category as string;
       const wantsRefresh = req.query.refresh === 'true';
@@ -567,7 +567,7 @@ async function startServer() {
   });
 
   // Chat endpoint
-  app.post('/api/chat', chatRateLimiter, async (req, res) => {
+  apiRouter.post('/chat', chatRateLimiter, async (req, res) => {
     // Server-to-server authentication check (strictly enforced in production)
     if (!isRequestAuthorized(req, n8nApiKey, isProd)) {
       return res.status(401).json({
@@ -777,6 +777,13 @@ async function startServer() {
     }
   });
 
+  // Mount API router under both /api and root to guarantee compatibility with Vercel rewrites and standalone Express
+  app.use('/api', apiRouter);
+  app.use(apiRouter);
+
+export async function startServer() {
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
   // Setup Vite middlewares in development or serve static assets in production
   if (!isProd) {
     const vite = await createViteServer({
@@ -796,7 +803,13 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+// Only start the HTTP listener if NOT in a Vercel serverless environment and not in test
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
+
+export { app };
+export default app;

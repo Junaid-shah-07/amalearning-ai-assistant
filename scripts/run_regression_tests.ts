@@ -2429,6 +2429,88 @@ const testCases: TestCase[] = [
       return { passed: true };
     },
   },
+  {
+    id: 'VERCEL-01',
+    name: 'Vercel entry point validation: api/index.ts exists and exports the Express app instance',
+    query: '',
+    validator: () => {
+      const apiIndexPath = path.resolve(process.cwd(), 'api/index.ts');
+      if (!fs.existsSync(apiIndexPath)) {
+        return { passed: false, reason: 'api/index.ts does not exist.' };
+      }
+      const content = fs.readFileSync(apiIndexPath, 'utf-8');
+      if (!content.includes('export default')) {
+        return { passed: false, reason: 'api/index.ts does not export default app.' };
+      }
+      if (/\bapp\.listen\s*\(/m.test(content)) {
+        return { passed: false, reason: 'api/index.ts must not call app.listen() in serverless functions.' };
+      }
+      return { passed: true };
+    },
+  },
+  {
+    id: 'VERCEL-02',
+    name: 'Vercel routing configuration: vercel.json rewrites /api/(.*) to api/index.ts and preserves SPA fallback',
+    query: '',
+    validator: () => {
+      const vercelJsonPath = path.resolve(process.cwd(), 'vercel.json');
+      if (!fs.existsSync(vercelJsonPath)) {
+        return { passed: false, reason: 'vercel.json does not exist.' };
+      }
+      const raw = fs.readFileSync(vercelJsonPath, 'utf-8');
+      let config: any;
+      try {
+        config = JSON.parse(raw);
+      } catch (e: any) {
+        return { passed: false, reason: `vercel.json is not valid JSON: ${e.message}` };
+      }
+
+      if (!Array.isArray(config.rewrites)) {
+        return { passed: false, reason: 'vercel.json must specify rewrites array.' };
+      }
+
+      const apiRewrite = config.rewrites.find((r: any) => r.source === '/api/(.*)');
+      if (!apiRewrite || apiRewrite.destination !== '/api/index.ts') {
+        return { passed: false, reason: 'vercel.json missing /api/(.*) -> /api/index.ts rewrite rule.' };
+      }
+
+      const spaRewrite = config.rewrites.find((r: any) => r.destination === '/index.html');
+      if (!spaRewrite || !spaRewrite.source.includes('api')) {
+        return { passed: false, reason: 'vercel.json missing SPA fallback rewrite excluding /api routes.' };
+      }
+
+      return { passed: true };
+    },
+  },
+  {
+    id: 'VERCEL-03',
+    name: 'Serverless execution safety: server.ts guards app.listen() against VERCEL and test environments',
+    query: '',
+    validator: () => {
+      const serverCode = fs.readFileSync(path.resolve(process.cwd(), 'server.ts'), 'utf-8');
+      if (!serverCode.includes('process.env.VERCEL')) {
+        return { passed: false, reason: 'server.ts must guard listener execution against process.env.VERCEL.' };
+      }
+      if (!serverCode.includes('export { app }') && !serverCode.includes('export default app')) {
+        return { passed: false, reason: 'server.ts must export app for Vercel and modular consumers.' };
+      }
+      return { passed: true };
+    },
+  },
+  {
+    id: 'VERCEL-04',
+    name: 'Vercel routing dual-mount: server.ts mounts apiRouter under both /api and root',
+    query: '',
+    validator: () => {
+      const serverCode = fs.readFileSync(path.resolve(process.cwd(), 'server.ts'), 'utf-8');
+      const mountsApiPrefix = serverCode.includes("app.use('/api', apiRouter)");
+      const mountsRootRouter = serverCode.includes('app.use(apiRouter)');
+      if (!mountsApiPrefix || !mountsRootRouter) {
+        return { passed: false, reason: 'server.ts must mount apiRouter under both /api and root for rewrite resilience.' };
+      }
+      return { passed: true };
+    },
+  },
 ];
 
 async function runTestSuite() {
