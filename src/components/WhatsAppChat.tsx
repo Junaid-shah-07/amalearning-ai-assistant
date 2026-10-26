@@ -23,13 +23,22 @@ import {
   Monitor,
   Copy,
   Info,
-  ExternalLink
+  ExternalLink,
+  UserCheck
 } from 'lucide-react';
 import { speakBritishEnglish, stopSpeech } from '../utils/textToSpeech';
 import { evaluateResponseQuality, ComplianceCheckResult } from '../utils/complianceChecker';
 import { QualityInspectorModal } from './QualityInspectorModal';
 import { KnowledgeBaseDrawer } from './KnowledgeBaseDrawer';
 import { TestScenario } from '../data/masterPrompt';
+import {
+  AllowedPersona,
+  ALLOWED_PERSONAS,
+  DEFAULT_PERSONA,
+  assignPersonaDeterministically,
+  isValidPersona,
+  formatPersonaGreeting,
+} from '../utils/personaManager';
 
 export interface ChatMessage {
   id: string;
@@ -56,20 +65,64 @@ const QUICK_CHIPS = [
 ];
 
 export const WhatsAppChat: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-1',
-      role: 'assistant',
-      content:
-        "Hi! 👋 I’m Zeeshan from AMAL.\n\nThanks for reaching out! 😊 I can help you explore our GCSE, IGCSE and Cambridge O-Level learning plans, weekly live tuition sessions, Topic Tests and Mock Exams.\n\nWhat can I help you with today?",
-      timestamp: '10:00',
-      compliance: {
-        overallPass: true,
-        score: 100,
-        results: [],
+  const [personaPreference, setPersonaPreference] = useState<'auto' | AllowedPersona>(() => {
+    try {
+      const pref = sessionStorage.getItem('amal_persona_preference');
+      if (pref && isValidPersona(pref)) return pref as AllowedPersona;
+    } catch {}
+    return 'auto';
+  });
+
+  const [conversationId, setConversationId] = useState<string>(() => {
+    try {
+      const stored = sessionStorage.getItem('amal_conversation_id');
+      if (stored && stored.trim()) return stored.trim();
+      const newId = crypto.randomUUID();
+      sessionStorage.setItem('amal_conversation_id', newId);
+      return newId;
+    } catch {
+      return crypto.randomUUID();
+    }
+  });
+
+  const [assignedPersona, setAssignedPersona] = useState<AllowedPersona>(() => {
+    try {
+      const pref = sessionStorage.getItem('amal_persona_preference');
+      if (pref && isValidPersona(pref)) return pref as AllowedPersona;
+      const stored = sessionStorage.getItem('amal_conversation_id');
+      if (stored && stored.trim()) return assignPersonaDeterministically(stored.trim());
+    } catch {}
+    return assignPersonaDeterministically(conversationId);
+  });
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    let initialPersona: AllowedPersona = DEFAULT_PERSONA;
+    try {
+      const pref = sessionStorage.getItem('amal_persona_preference');
+      if (pref && isValidPersona(pref)) {
+        initialPersona = pref as AllowedPersona;
+      } else {
+        const stored = sessionStorage.getItem('amal_conversation_id');
+        initialPersona = assignPersonaDeterministically(stored && stored.trim() ? stored.trim() : conversationId);
+      }
+    } catch {
+      initialPersona = assignPersonaDeterministically(conversationId);
+    }
+
+    return [
+      {
+        id: 'welcome-1',
+        role: 'assistant',
+        content: formatPersonaGreeting(initialPersona),
+        timestamp: '10:00',
+        compliance: {
+          overallPass: true,
+          score: 100,
+          results: [],
+        },
       },
-    },
-  ]);
+    ];
+  });
 
   const [inputText, setInputText] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -100,6 +153,42 @@ export const WhatsAppChat: React.FC = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Authoritative server handshake: sync conversationId and persona
+  useEffect(() => {
+    let isCancelled = false;
+    const params = new URLSearchParams({ conversationId });
+    if (personaPreference !== 'auto') {
+      params.set('persona', personaPreference);
+    }
+
+    fetch(`/api/chat?${params.toString()}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isCancelled && data && data.persona && isValidPersona(data.persona)) {
+          setAssignedPersona(data.persona);
+          // If conversation has only the initial welcome message, sync its text with server-assigned persona
+          setMessages((prev) => {
+            if (prev.length === 1 && prev[0].role === 'assistant' && prev[0].id.startsWith('welcome')) {
+              return [
+                {
+                  ...prev[0],
+                  content: formatPersonaGreeting(data.persona, customerName.trim() || undefined),
+                },
+              ];
+            }
+            return prev;
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('Initial persona sync note:', err);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [conversationId, personaPreference]);
+
   const getCurrentTimeString = () => {
     const now = new Date();
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -123,23 +212,42 @@ export const WhatsAppChat: React.FC = () => {
 
     const activeCustomerName = (nameOverride !== undefined ? nameOverride : customerName).trim() || undefined;
 
+    const payload: any = {
+      conversationId,
+      customerName: activeCustomerName,
+      messages: newMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    };
+    if (personaPreference !== 'auto') {
+      payload.persona = personaPreference;
+    }
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          customerName: activeCustomerName,
-          messages: newMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
       const replyText = data.reply || "I'm sorry, I couldn't process that right now. Please reach our team at support@amalearning.space.";
+
+      // Retain and sync server-authoritative conversationId and persona
+      if (data.conversationId && data.conversationId !== conversationId) {
+        setConversationId(data.conversationId);
+        try {
+          sessionStorage.setItem('amal_conversation_id', data.conversationId);
+        } catch {
+          // ignore session storage errors in constrained environments
+        }
+      }
+      if (data.persona && isValidPersona(data.persona)) {
+        setAssignedPersona(data.persona);
+      }
 
       const audit = evaluateResponseQuality(content, replyText, newMessages.length, activeCustomerName);
 
@@ -197,7 +305,7 @@ export const WhatsAppChat: React.FC = () => {
     const text = messages
       .map(
         (m) =>
-          `[${m.timestamp}] ${m.role === 'user' ? 'You' : 'Zeeshan from AMAL'}: ${m.content}`
+          `[${m.timestamp}] ${m.role === 'user' ? 'You' : `${assignedPersona} from AMAL`}: ${m.content}`
       )
       .join('\n\n');
 
@@ -205,23 +313,38 @@ export const WhatsAppChat: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `AMAL-Zeeshan-WhatsApp-Chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    link.download = `AMAL-${assignedPersona}-WhatsApp-Chat-${new Date().toISOString().slice(0, 10)}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  const handleClearChat = (nameToUse?: string) => {
+  const handleClearChat = (nameToUse?: string, forcedPref?: 'auto' | AllowedPersona) => {
     stopSpeech();
+    const nextPref = forcedPref !== undefined ? forcedPref : personaPreference;
+    const newId = crypto.randomUUID();
+    setConversationId(newId);
+    try {
+      sessionStorage.setItem('amal_conversation_id', newId);
+      if (nextPref !== 'auto') {
+        sessionStorage.setItem('amal_persona_preference', nextPref);
+      } else {
+        sessionStorage.removeItem('amal_persona_preference');
+      }
+    } catch {
+      // ignore
+    }
+
+    const nextPersona = nextPref !== 'auto' ? nextPref : assignPersonaDeterministically(newId);
+    setAssignedPersona(nextPersona);
+
     const effectiveName = (nameToUse !== undefined ? nameToUse : customerName).trim();
-    const welcomeContent = effectiveName
-      ? `Hi ${effectiveName}! 👋 Welcome to AMAL. How can I help you today?`
-      : "Hi! 👋 I’m Zeeshan from AMAL.\n\nThanks for reaching out! 😊 I can help you explore our GCSE, IGCSE and Cambridge O-Level learning plans, weekly live tuition sessions, Topic Tests and Mock Exams.\n\nWhat can I help you with today?";
+    const welcomeContent = formatPersonaGreeting(nextPersona, effectiveName || undefined);
 
     setMessages([
       {
-        id: 'welcome-reset',
+        id: `welcome-${Date.now()}`,
         role: 'assistant',
         content: welcomeContent,
         timestamp: getCurrentTimeString(),
@@ -259,8 +382,8 @@ export const WhatsAppChat: React.FC = () => {
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
                 AMALearning
-                <span className="text-[11px] font-normal text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-full">
-                  Zeeshan • AMAL Assistant
+                <span className="text-[11px] font-medium text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span>{assignedPersona} • AMAL Assistant</span>
                 </span>
               </h1>
             </div>
@@ -357,6 +480,30 @@ export const WhatsAppChat: React.FC = () => {
               {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
+            {/* Persona Selector */}
+            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs">
+              <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <select
+                value={personaPreference}
+                onChange={(e) => {
+                  const val = e.target.value as 'auto' | AllowedPersona;
+                  setPersonaPreference(val);
+                  handleClearChat(undefined, val);
+                }}
+                className="bg-transparent text-emerald-300 text-xs focus:outline-none cursor-pointer"
+                title="Select persona or auto-assign by conversation ID"
+              >
+                <option value="auto" className="bg-slate-900 text-slate-200">
+                  🎲 Auto ({assignedPersona})
+                </option>
+                {ALLOWED_PERSONAS.map((p) => (
+                  <option key={p} value={p} className="bg-slate-900 text-slate-200">
+                    👤 {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Export */}
             <button
               onClick={handleExportChat}
@@ -370,7 +517,7 @@ export const WhatsAppChat: React.FC = () => {
             <button
               onClick={() => handleClearChat()}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
-              title="Reset Conversation"
+              title="Reset Conversation (generates new conversation ID)"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -417,7 +564,7 @@ export const WhatsAppChat: React.FC = () => {
                       </span>
                     ) : (
                       <span>
-                        Zeeshan from AMAL • online
+                        {assignedPersona} from AMAL • online
                         {customerName.trim() && (
                           <span className="text-emerald-300/90 font-medium ml-1">
                             (for {customerName.trim()})
@@ -773,6 +920,7 @@ export const WhatsAppChat: React.FC = () => {
         activeTab={drawerTab}
         setActiveTab={setDrawerTab}
         onSelectScenario={handleScenarioSelect}
+        persona={assignedPersona}
       />
 
       {/* Phone Call Information Modal */}

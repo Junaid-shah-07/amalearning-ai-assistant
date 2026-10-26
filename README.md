@@ -60,7 +60,21 @@ The system is built as a production-grade full-stack Node.js / Express applicati
    - Central model configuration via `GEMINI_MODEL` (`gemini-2.5-flash-lite`).
    - Exponential backoff with jitter on transient errors (HTTP 429, 503).
    - Automatic fallback to deterministic, rule-based response engine when AI calls are unavailable or unconfigured.
-   - Strict log sanitizer strips raw API keys and tokens from all error output.
+6. **Multi-Persona Identity System (`src/utils/personaManager.ts`):**
+   - Whitelist of 5 approved assistant personas: `Zeeshan`, `Ashi`, `Dilawar`, `Awais`, `Sohaib`.
+   - **Deterministic Assignment Architecture (Serverless Resilience):**
+     * Designed for serverless environments (e.g., Vercel) without external database dependencies or stateful connection pools.
+     * **NOTE:** This system uses **deterministic hashing** based on `conversationId`, NOT database-backed session storage.
+     * For any given conversation ID (or n8n WhatsApp phone number/thread ID), the assigned persona is deterministically computed via 32-bit FNV-1a hashing (`hash(conversationId) % 5`).
+     * This guarantees 100% session identity stability across serverless cold starts, container scale-outs, and independent invocations.
+   - **Server-Authoritative Source of Truth:**
+     * The server authoritatively assigns and verifies the persona. Arbitrary, unauthenticated clients cannot override personas mid-session.
+     * Explicit persona selection is only honored through trusted, authorized flows (e.g., n8n integration with valid API key).
+   - **Transparent AI Identity & Anti-Injection Guardrails:**
+     * All 5 personas identify transparently as AMAL's virtual AI assistant and never claim human status or real employee identities.
+     * System prompt instructions strictly forbid user prompt injection attacks from altering the persona name.
+   - **Bidirectional Session Contract:**
+     * Responses from `POST /api/chat` return `{ reply, conversationId, persona }` so that both web clients and n8n workflows retain and echo the stable session identifiers.
 
 ---
 

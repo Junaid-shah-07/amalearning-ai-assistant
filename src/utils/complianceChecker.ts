@@ -255,16 +255,23 @@ export function evaluateResponseQuality(
     note: dayFilterNote,
   });
 
-  // 15. Zeeshan Identity & Greeting Discipline
+  // 15. Persona Identity & Greeting Discipline
   const hasOldAiGreeting = text.includes("amal's ai whatsapp assistant") || text.includes('amal’s ai whatsapp assistant');
   const isIdentityQuery = query.includes('who are you') || query.includes('your name') || query.includes('human') || query.includes('real person') || query.includes('teacher');
   const isPureGreetingQuery = query === 'hello' || query === 'hi' || query === 'hey' || query === 'start';
   let identityPassed = true;
   let identityNote = 'Assistant identity and greeting rules verified.';
 
+  const mentionsApprovedPersona =
+    text.includes('zeeshan') ||
+    text.includes('ashi') ||
+    text.includes('dilawar') ||
+    text.includes('awais') ||
+    text.includes('sohaib');
+
   if (hasOldAiGreeting) {
     identityPassed = false;
-    identityNote = 'Warning: Used deprecated "AMAL\'s AI WhatsApp assistant" instead of "Zeeshan from AMAL".';
+    identityNote = 'Warning: Used deprecated "AMAL\'s AI WhatsApp assistant" instead of approved persona name.';
   } else if (isPureGreetingQuery) {
     if (customerName) {
       const lowerName = customerName.toLowerCase();
@@ -274,31 +281,30 @@ export function evaluateResponseQuality(
         identityPassed = true;
         identityNote = `Naturally greeted personalised customer ${customerName}.`;
       } else {
-        const introducesZeeshan = text.includes('zeeshan from amal') || text.includes('zeeshan');
-        identityPassed = introducesZeeshan;
-        identityNote = introducesZeeshan ? 'Successfully greeted as Zeeshan from AMAL.' : 'Warning: Did not introduce naturally in greeting.';
+        const introducesPersona = (text.includes('from amal') && mentionsApprovedPersona) || mentionsApprovedPersona;
+        identityPassed = introducesPersona;
+        identityNote = introducesPersona ? 'Successfully greeted as AMAL assistant.' : 'Warning: Did not introduce naturally in greeting.';
       }
     } else {
-      const introducesZeeshan = text.includes('zeeshan from amal') || text.includes('zeeshan');
-      if (!introducesZeeshan) {
+      const introducesPersona = (text.includes('from amal') && mentionsApprovedPersona) || mentionsApprovedPersona;
+      if (!introducesPersona) {
         identityPassed = false;
-        identityNote = 'Warning: Did not introduce as Zeeshan from AMAL in greeting.';
+        identityNote = 'Warning: Did not introduce with approved persona name from AMAL in greeting.';
       } else {
-        identityNote = 'Successfully greeted as Zeeshan from AMAL with approved greeting text.';
+        identityNote = 'Successfully greeted with approved persona from AMAL with approved greeting text.';
       }
     }
   } else if (isIdentityQuery) {
-    const statesVirtualAi = text.includes('virtual ai') || text.includes('ai assistant');
-    const mentionsZeeshan = text.includes('zeeshan');
-    if (statesVirtualAi && mentionsZeeshan) {
+    const statesVirtualAi = text.includes('virtual ai') || text.includes('ai assistant') || text.includes('ai virtual');
+    if (statesVirtualAi && mentionsApprovedPersona) {
       identityPassed = true;
-      identityNote = 'Transparently confirmed Zeeshan is AMAL\'s virtual AI assistant.';
+      identityNote = 'Transparently confirmed persona is AMAL\'s virtual AI assistant.';
     }
   }
 
   results.push({
     ruleId: 15,
-    label: 'Zeeshan identity & greeting discipline',
+    label: 'Persona identity & greeting discipline',
     passed: identityPassed,
     note: identityNote,
   });

@@ -35,6 +35,7 @@ interface KnowledgeBaseDrawerProps {
   activeTab: 'scenarios' | 'plans' | 'timetable' | 'prompt' | 'whatsapp';
   setActiveTab: (tab: 'scenarios' | 'plans' | 'timetable' | 'prompt' | 'whatsapp') => void;
   onSelectScenario: (scenario: TestScenario) => void;
+  persona?: string;
 }
 
 export const KnowledgeBaseDrawer: React.FC<KnowledgeBaseDrawerProps> = ({
@@ -43,12 +44,17 @@ export const KnowledgeBaseDrawer: React.FC<KnowledgeBaseDrawerProps> = ({
   activeTab,
   setActiveTab,
   onSelectScenario,
+  persona = 'Zeeshan',
 }) => {
   const [promptSearch, setPromptSearch] = useState('');
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [waPhoneNumber, setWaPhoneNumber] = useState('');
-  const [waCustomMessage, setWaCustomMessage] = useState('Hi AMAL, I would like to enquire with Zeeshan about GCSE preparation plans.');
+  const [waCustomMessage, setWaCustomMessage] = useState(`Hi AMAL, I would like to enquire with ${persona} about GCSE preparation plans.`);
+
+  useEffect(() => {
+    setWaCustomMessage(`Hi AMAL, I would like to enquire with ${persona} about GCSE preparation plans.`);
+  }, [persona]);
   const [planTypeView, setPlanTypeView] = useState<'individual' | 'school'>('individual');
   const [backendPlans, setBackendPlans] = useState<{
     individual: any[];
