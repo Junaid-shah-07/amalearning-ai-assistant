@@ -364,7 +364,7 @@ export const WhatsAppChat: React.FC = () => {
       // Replace bold markers
       const formatted = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<strong>$1</strong>');
       return (
-        <span key={pIdx} className="block min-h-[1.25em]">
+        <span key={pIdx} className="block min-h-[1.25em] break-words [overflow-wrap:anywhere]">
           <span dangerouslySetInnerHTML={{ __html: formatted }} />
         </span>
       );
@@ -372,34 +372,32 @@ export const WhatsAppChat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-950 text-slate-100 overflow-hidden">
+    <div className="flex h-screen h-[100dvh] w-full max-w-full bg-slate-950 text-slate-100 overflow-hidden">
       {/* Main Container */}
-      <div className="flex-1 flex flex-col h-full relative">
+      <div className="flex-1 flex flex-col h-full min-w-0 max-w-full relative overflow-hidden">
         {/* Top Control Bar */}
-        <header className="h-14 border-b border-slate-800 bg-slate-900/90 px-4 flex items-center justify-between shrink-0 z-20 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
-                AMALearning
-                <span className="text-[11px] font-medium text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span>{assignedPersona} • AMAL Assistant</span>
-                </span>
-              </h1>
-            </div>
+        <header className="h-14 border-b border-slate-800 bg-slate-900/90 px-2 sm:px-4 flex items-center justify-between shrink-0 z-20 backdrop-blur-md gap-2 min-w-0 max-w-full">
+          <div className="flex items-center gap-2 min-w-0 shrink">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <h1 className="text-xs sm:text-sm font-bold tracking-tight text-white flex items-center gap-1.5 min-w-0 truncate">
+              <span className="hidden xs:inline truncate">AMALearning</span>
+              <span className="text-[10px] sm:text-[11px] font-medium text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                <span>{assignedPersona} • AMAL Assistant</span>
+              </span>
+            </h1>
           </div>
 
           {/* Quick Studio Navigation Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0 min-w-0">
             <button
               onClick={() => {
                 setDrawerTab('scenarios');
                 setDrawerOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg transition shadow-sm"
+              className="inline-flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 text-xs font-semibold bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg transition shadow-sm shrink-0"
               title="Test Scenarios"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">Test Scenarios</span>
             </button>
 
@@ -408,10 +406,10 @@ export const WhatsAppChat: React.FC = () => {
                 setDrawerTab('plans');
                 setDrawerOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition"
+              className="inline-flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition shrink-0"
               title="Pricing & Plans"
             >
-              <CreditCard className="w-3.5 h-3.5" />
+              <CreditCard className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden md:inline">Subscriptions</span>
             </button>
 
@@ -420,10 +418,10 @@ export const WhatsAppChat: React.FC = () => {
                 setDrawerTab('timetable');
                 setDrawerOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition"
+              className="inline-flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition shrink-0"
               title="GCSE Weekly Timetable"
             >
-              <Calendar className="w-3.5 h-3.5" />
+              <Calendar className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden md:inline">Timetable</span>
             </button>
 
@@ -432,17 +430,17 @@ export const WhatsAppChat: React.FC = () => {
                 setDrawerTab('prompt');
                 setDrawerOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition"
+              className="hidden sm:inline-flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition shrink-0"
               title="Master System Prompt"
             >
-              <BookOpen className="w-3.5 h-3.5" />
+              <BookOpen className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden lg:inline">Master Prompt</span>
             </button>
 
-            <div className="h-4 w-px bg-slate-800 mx-1" />
+            <div className="h-4 w-px bg-slate-800 mx-0.5 sm:mx-1 shrink-0" />
 
             {/* View Mode Switcher */}
-            <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+            <div className="hidden sm:flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
               <button
                 onClick={() => setViewMode('desktop')}
                 className={`p-1.5 rounded-md transition ${
@@ -470,18 +468,18 @@ export const WhatsAppChat: React.FC = () => {
             {/* Voice Read Aloud Toggle */}
             <button
               onClick={() => setTtsEnabled(!ttsEnabled)}
-              className={`p-2 rounded-lg transition ${
+              className={`p-1.5 sm:p-2 rounded-lg transition shrink-0 ${
                 ttsEnabled
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                   : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
               title={ttsEnabled ? 'Voice Auto-read Enabled (British)' : 'Enable Voice Auto-read'}
             >
-              {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              {ttsEnabled ? <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             </button>
 
             {/* Persona Selector */}
-            <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs">
+            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-1.5 sm:px-2 py-1 text-xs shrink-0 max-w-[120px] sm:max-w-none">
               <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <select
                 value={personaPreference}
@@ -490,7 +488,7 @@ export const WhatsAppChat: React.FC = () => {
                   setPersonaPreference(val);
                   handleClearChat(undefined, val);
                 }}
-                className="bg-transparent text-emerald-300 text-xs focus:outline-none cursor-pointer"
+                className="bg-transparent text-emerald-300 text-xs focus:outline-none cursor-pointer max-w-[85px] sm:max-w-none truncate"
                 title="Select persona or auto-assign by conversation ID"
               >
                 <option value="auto" className="bg-slate-900 text-slate-200">
@@ -507,38 +505,38 @@ export const WhatsAppChat: React.FC = () => {
             {/* Export */}
             <button
               onClick={handleExportChat}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+              className="p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition shrink-0"
               title="Export WhatsApp Chat (.txt)"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             {/* Reset */}
             <button
               onClick={() => handleClearChat()}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+              className="p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition shrink-0"
               title="Reset Conversation (generates new conversation ID)"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </header>
 
         {/* Chat Canvas Area */}
-        <div className="flex-1 flex items-center justify-center p-0 sm:p-4 bg-slate-950 overflow-hidden">
+        <div className="flex-1 min-h-0 flex items-center justify-center p-0 sm:p-4 bg-slate-950 overflow-hidden w-full max-w-full">
           <div
-            className={`flex flex-col bg-[#0b141a] shadow-2xl transition-all duration-300 overflow-hidden relative ${
+            className={`flex flex-col bg-[#0b141a] shadow-2xl transition-all duration-300 overflow-hidden relative w-full min-w-0 ${
               viewMode === 'mobile'
-                ? 'w-full sm:max-w-md h-full sm:h-[88vh] sm:rounded-[2.5rem] border-0 sm:border-[8px] sm:border-slate-800 ring-1 ring-slate-700/50'
-                : 'w-full h-full sm:rounded-2xl border border-slate-800'
+                ? 'sm:max-w-md h-full sm:h-[88vh] sm:rounded-[2.5rem] border-0 sm:border-[8px] sm:border-slate-800 ring-1 ring-slate-700/50'
+                : 'h-full sm:rounded-2xl border border-slate-800'
             }`}
           >
             {/* Authentic WhatsApp Chat Header */}
-            <div className="h-16 bg-[#202c33] px-4 flex items-center justify-between border-b border-[#2a3942] z-10 shrink-0">
-              <div className="flex items-center gap-3">
+            <div className="h-14 sm:h-16 bg-[#202c33] px-3 sm:px-4 flex items-center justify-between border-b border-[#2a3942] z-10 shrink-0 w-full min-w-0">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 mr-1.5 sm:mr-2">
                 {/* Avatar with Verified Badge */}
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center font-bold text-white shadow-md text-sm tracking-wider">
+                <div className="relative shrink-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center font-bold text-white shadow-md text-xs sm:text-sm tracking-wider">
                     AMAL
                   </div>
                   <div className="absolute -bottom-0.5 -right-0.5 bg-[#202c33] rounded-full p-0.5">
@@ -548,22 +546,22 @@ export const WhatsAppChat: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-sm text-slate-100">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-semibold text-xs sm:text-sm text-slate-100 truncate">
                       AMALearning Official
                     </span>
-                    <span className="inline-flex items-center text-[10px] font-bold px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30">
+                    <span className="inline-flex items-center text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30 shrink-0">
                       Verified
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                  <div className="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1 min-w-0 truncate">
                     {isTyping ? (
                       <span className="text-emerald-400 font-medium animate-pulse">
                         typing...
                       </span>
                     ) : (
-                      <span>
+                      <span className="truncate">
                         {assignedPersona} from AMAL • online
                         {customerName.trim() && (
                           <span className="text-emerald-300/90 font-medium ml-1">
@@ -577,9 +575,9 @@ export const WhatsAppChat: React.FC = () => {
               </div>
 
               {/* Header Right Actions */}
-              <div className="flex items-center gap-2 text-slate-400">
+              <div className="flex items-center gap-1 sm:gap-2 text-slate-400 shrink-0">
                 {/* Customer Name Setting Tag / Input */}
-                <div className="hidden sm:flex items-center bg-[#111b21] border border-[#2a3942] rounded-lg px-2 py-1 text-xs">
+                <div className="hidden md:flex items-center bg-[#111b21] border border-[#2a3942] rounded-lg px-2 py-1 text-xs">
                   <span className="text-slate-400 mr-1.5 text-[11px]">Customer:</span>
                   <input
                     type="text"
@@ -602,33 +600,33 @@ export const WhatsAppChat: React.FC = () => {
 
                 <button
                   onClick={() => setCallModalOpen(true)}
-                  className="p-2 hover:text-slate-100 hover:bg-slate-700/40 rounded-full transition"
+                  className="p-1.5 sm:p-2 hover:text-slate-100 hover:bg-slate-700/40 rounded-full transition"
                   title="Voice Call Info"
                 >
-                  <Phone className="w-4 h-4" />
+                  <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
                 <button
                   onClick={() => setCallModalOpen(true)}
-                  className="p-2 hover:text-slate-100 hover:bg-slate-700/40 rounded-full transition"
+                  className="p-1.5 sm:p-2 hover:text-slate-100 hover:bg-slate-700/40 rounded-full transition"
                   title="Video Call Info"
                 >
-                  <Video className="w-4 h-4" />
+                  <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
                 <button
                   onClick={() => {
                     setDrawerTab('whatsapp');
                     setDrawerOpen(true);
                   }}
-                  className="p-2 hover:text-slate-100 hover:bg-slate-700/40 rounded-full transition"
+                  className="p-1.5 sm:p-2 hover:text-slate-100 hover:bg-slate-700/40 rounded-full transition"
                   title="WhatsApp Integration Link"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
 
             {/* Messages Body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 whatsapp-bg-pattern">
+            <div className="flex-1 overflow-y-auto px-2.5 sm:px-4 py-3 sm:py-4 space-y-3.5 whatsapp-bg-pattern min-w-0 w-full">
               {/* Security Advisory Pill */}
               <div className="flex justify-center my-1">
                 <div className="max-w-md bg-[#182229]/90 border border-[#222e35] rounded-lg px-3 py-1.5 text-center shadow-sm">
@@ -654,17 +652,17 @@ export const WhatsAppChat: React.FC = () => {
                 return (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${isAssistant ? 'items-start' : 'items-end'} group`}
+                    className={`flex flex-col ${isAssistant ? 'items-start' : 'items-end'} group min-w-0 max-w-full`}
                   >
                     <div
-                      className={`relative max-w-[85%] sm:max-w-[75%] rounded-2xl px-3.5 py-2.5 shadow-md text-xs leading-relaxed transition-all ${
+                      className={`relative max-w-[90%] sm:max-w-[75%] rounded-2xl px-3 sm:px-3.5 py-2 sm:py-2.5 shadow-md text-xs leading-relaxed transition-all min-w-0 ${
                         isAssistant
                           ? 'bg-[#202c33] text-slate-100 rounded-tl-sm border border-[#2a3942]'
                           : 'bg-[#005c4b] text-white rounded-tr-sm border border-[#02735e]'
                       }`}
                     >
                       {/* Message Content */}
-                      <div className="space-y-1 break-words">
+                      <div className="space-y-1 break-words [overflow-wrap:anywhere] min-w-0">
                         {formatMessageText(msg.content)}
                       </div>
 
@@ -738,7 +736,7 @@ export const WhatsAppChat: React.FC = () => {
             </div>
 
             {/* Quick Action Suggestion Chips (Context-Aware: Never show unrelated pricing after timetable query) */}
-            <div className="bg-[#111b21] px-3 py-2 border-t border-[#202c33] overflow-x-auto flex gap-1.5 shrink-0 no-scrollbar">
+            <div className="bg-[#111b21] px-2.5 sm:px-3 py-2 border-t border-[#202c33] overflow-x-auto flex gap-1.5 shrink-0 no-scrollbar w-full max-w-full touch-pan-x">
               {(() => {
                 const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
                 const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
@@ -840,14 +838,14 @@ export const WhatsAppChat: React.FC = () => {
             </div>
 
             {/* Bottom Input Bar */}
-            <div className="h-16 bg-[#202c33] px-3 py-2 flex items-center gap-2 border-t border-[#2a3942] shrink-0">
+            <div className="min-h-14 sm:h-16 bg-[#202c33] px-2 sm:px-3 py-2 flex items-center gap-1.5 sm:gap-2 border-t border-[#2a3942] shrink-0 w-full min-w-0">
               <button
                 type="button"
                 onClick={() => setInputText((prev) => prev + ' 🙂 ')}
-                className="p-2 text-slate-400 hover:text-slate-200 transition rounded-full hover:bg-slate-700/30"
+                className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-200 transition rounded-full hover:bg-slate-700/30 shrink-0"
                 title="Add emoji"
               >
-                <Smile className="w-5 h-5" />
+                <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               <button
@@ -856,10 +854,10 @@ export const WhatsAppChat: React.FC = () => {
                   setDrawerTab('scenarios');
                   setDrawerOpen(true);
                 }}
-                className="p-2 text-slate-400 hover:text-slate-200 transition rounded-full hover:bg-slate-700/30"
+                className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-200 transition rounded-full hover:bg-slate-700/30 shrink-0"
                 title="Load test scenario"
               >
-                <Paperclip className="w-5 h-5" />
+                <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               <form
@@ -867,21 +865,21 @@ export const WhatsAppChat: React.FC = () => {
                   e.preventDefault();
                   handleSendMessage();
                 }}
-                className="flex-1 flex items-center gap-2"
+                className="flex-1 min-w-0 flex items-center gap-1.5 sm:gap-2"
               >
                 <input
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder="Type a message (e.g. 'How much is Standard?')..."
-                  className="w-full bg-[#2a3942] text-white text-xs placeholder-[#8696a0] rounded-xl px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="flex-1 min-w-0 w-full bg-[#2a3942] text-white text-xs placeholder-[#8696a0] rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
 
                 {inputText.trim() ? (
                   <button
                     type="submit"
                     disabled={isTyping}
-                    className="p-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition shrink-0 shadow disabled:opacity-50 active:scale-95"
+                    className="p-2 sm:p-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition shrink-0 shadow disabled:opacity-50 active:scale-95"
                     title="Send message"
                   >
                     <Send className="w-4 h-4" />
@@ -890,7 +888,7 @@ export const WhatsAppChat: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleSendMessage("Can you give me a summary of AMAL's learning features?")}
-                    className="p-2.5 text-slate-400 hover:text-slate-200 transition rounded-full hover:bg-slate-700/30"
+                    className="p-2 sm:p-2.5 text-slate-400 hover:text-slate-200 transition rounded-full hover:bg-slate-700/30 shrink-0"
                     title="Voice note simulation"
                   >
                     <Mic className="w-4 h-4" />
