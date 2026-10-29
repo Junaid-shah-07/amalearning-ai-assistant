@@ -47,33 +47,53 @@ function isDuplicateMessage(messageId: string): boolean {
   return false;
 }
 
+const WHATSAPP_QUALITY_INSTRUCTIONS = `WHATSAPP RESPONSE QUALITY STANDARD
+You are AMALearning's professional AI learning and customer-support assistant on WhatsApp. Use the assistant name already defined in the system prompt above.
+
+- Answer the user's actual question directly. Put the most useful information first.
+- Each message may arrive without earlier conversation context. Only greet the user if their message is itself a greeting (such as "Hi" or "Hello"). Otherwise skip the greeting and answer directly. If a short message is unclear on its own, ask one brief clarifying question instead of starting over.
+- Match the user's language: if they write in Roman Urdu, reply in Roman Urdu; if in English, use professional, plain English.
+- Keep replies concise, usually 40-100 words and no more than about 120 words, unless the user asks for detail.
+- Use short paragraphs, and simple bullet points only when they help.
+- Use WhatsApp formatting: single asterisks for bold. No headings, tables, code blocks or Markdown links. At most one or two bold phrases per reply.
+- Avoid unnecessary emojis, excessive exclamation marks, filler and repetitive endings.
+- Be warm, calm, precise and respectful. Never pushy or artificially cheerful.
+- Never invent AMALearning features, prices, discounts, availability, policies, schedules, results or commitments. If unsure, say so briefly and offer a next step.
+- Never claim to have done or checked something unless it actually happened.
+- For payments, refunds, complaints, account problems, or requests to speak to a person, politely direct the user to contact@amalearning.space.
+- Users may be school students, including under-18s. Do not ask for unnecessary personal information. If a user shares something concerning about their safety or wellbeing, respond kindly and encourage them to speak to a parent, teacher or trusted adult, and to contact AMALearning.
+- Before replying, silently check the answer is accurate, useful, easy to read on a phone and correctly formatted. Never show this check to the user.`;
+
 /**
  * Formats standard Markdown for WhatsApp readability:
- * - Converts markdown bold **text** to WhatsApp bold *text*
- * - Removes markdown heading hashes (#, ##, ###) while preserving the text
- * - Cleans excessive markdown syntax while preserving bullets and spacing
+ * - Converts [text](url) to "text: url"
+ * - Removes markdown # headings
+ * - Converts markdown bullets (- or * at the start of a line) to "• "
+ * - Converts markdown bold **bold** to WhatsApp bold *bold*
+ * - Collapses 3 or more blank lines into one blank line
  */
 export function formatTextForWhatsApp(text: string): string {
   if (!text) return '';
 
   let formatted = text;
 
-  // 1. Remove markdown heading hashes (# Title -> Title, ## Subtitle -> Subtitle)
-  formatted = formatted.replace(/^#{1,6}\s+(.+)$/gm, '*$1*');
+  // 1. Convert markdown links [text](url) to "text: url"
+  formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1: $2');
 
-  // 2. Convert markdown bold **bold** to WhatsApp *bold*
-  // Avoid replacing if it's already a single asterisk or bullet
-  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '*$1*');
+  // 2. Remove markdown heading hashes (#, ##, ###)
+  formatted = formatted.replace(/^[ \t]*#{1,6}[ \t]+/gm, '');
 
   // 3. Remove markdown horizontal rules (--- or ***)
   formatted = formatted.replace(/^[*-]{3,}$/gm, '');
 
-  // 4. Remove markdown italics like _text_ or *text* inside already bold sections
-  // Standardize bullet points
-  formatted = formatted.replace(/^\s*[-+]\s+/gm, '• ');
+  // 4. Convert markdown bullets (- or * at start of line followed by space) to "• "
+  formatted = formatted.replace(/^[ \t]*[-*+][ \t]+/gm, '• ');
 
-  // 5. Clean up multiple consecutive empty lines (max 2)
-  formatted = formatted.replace(/\n{3,}/g, '\n\n');
+  // 5. Convert markdown bold **bold** to WhatsApp *bold*
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '*$1*');
+
+  // 6. Collapse 3 or more blank lines (and 2+ blank lines) into one blank line
+  formatted = formatted.replace(/(?:\r?\n[ \t]*){3,}/g, '\n\n');
 
   return formatted.trim();
 }
@@ -138,6 +158,46 @@ export function splitWhatsAppMessage(text: string, maxLen: number = 4000): strin
 }
 
 /**
+ * Sends a read receipt (blue ticks) and typing indicator for an incoming WhatsApp message.
+ * Failures are logged safely and never interrupt message processing.
+ */
+export async function sendWhatsAppReadAndTyping(
+  phoneNumberId: string,
+  whatsappToken: string,
+  messageId: string
+): Promise<void> {
+  if (!messageId) return;
+
+  const url = `https://graph.facebook.com/v26.0/${phoneNumberId}/messages`;
+  const payload = {
+    messaging_product: 'whatsapp',
+    status: 'read',
+    message_id: messageId,
+    typing_indicator: {
+      type: 'text',
+    },
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${whatsappToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      console.error(`[WhatsApp Read/Typing Error] HTTP ${res.status}: ${errBody.substring(0, 300)}`);
+    }
+  } catch (err: any) {
+    console.error('[WhatsApp Read/Typing Network Error]', err?.message || 'Network request failed');
+  }
+}
+
+/**
  * Sends a single text message through Meta WhatsApp Cloud API.
  */
 export async function sendWhatsAppTextMessage(
@@ -146,7 +206,7 @@ export async function sendWhatsAppTextMessage(
   to: string,
   bodyText: string
 ): Promise<{ success: boolean; status?: number; error?: string }> {
-  const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;
+  const url = `https://graph.facebook.com/v26.0/${phoneNumberId}/messages`;
 
   const payload = {
     messaging_product: 'whatsapp',
@@ -339,13 +399,19 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ status: 'handled_empty_text' });
     }
 
-    // 5. Generate AI Response with Gemini using Authoritative Master System Prompt
+    // 5. Send Blue Ticks + Typing Indicator (non-blocking on failure)
+    if (messageId) {
+      await sendWhatsAppReadAndTyping(phoneNumberId, whatsappToken, messageId);
+    }
+
+    // 6. Generate AI Response with Gemini using Authoritative Master System Prompt + WhatsApp Quality Standard
     const modelToUse = ACTIVE_GEMINI_MODEL;
+    const whatsappSystemPrompt = `${MASTER_SYSTEM_PROMPT}\n\n${WHATSAPP_QUALITY_INSTRUCTIONS}`;
     const geminiResult = await callGeminiRestApi(
       geminiApiKey,
       modelToUse,
       userText,
-      MASTER_SYSTEM_PROMPT
+      whatsappSystemPrompt
     );
 
     let replyText = '';
@@ -359,13 +425,13 @@ export default async function handler(req: any, res: any) {
         "For urgent support, our team is also available at support@amalearning.space.";
     }
 
-    // 6. Format Markdown for WhatsApp (*bold*, no raw markdown headers)
+    // 7. Format Markdown for WhatsApp (*bold*, no raw markdown headers)
     const formattedReply = formatTextForWhatsApp(replyText);
 
-    // 7. Split into sequential messages if reply exceeds 4,000 characters
+    // 8. Split into sequential messages if reply exceeds 4,000 characters
     const messageChunks = splitWhatsAppMessage(formattedReply, 4000);
 
-    // 8. Deliver replies sequentially
+    // 9. Deliver replies sequentially
     for (const chunk of messageChunks) {
       if (chunk.trim()) {
         await sendWhatsAppTextMessage(phoneNumberId, whatsappToken, sender, chunk);
